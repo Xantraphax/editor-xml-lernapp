@@ -4,11 +4,13 @@ const baseImage = document.getElementById("baseImage");
 const output = document.getElementById("output");
 const exportButton = document.getElementById("exportButton");
 
-let fieldCount = 0;
+let currentImageFileName = "";
 
 imageLoader.addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (!file) return;
+
+  currentImageFileName = file.name;
 
   const reader = new FileReader();
   reader.onload = function (event) {
@@ -40,13 +42,14 @@ function createInputBox(x, y) {
 
   div.appendChild(input);
   imageContainer.appendChild(div);
+
+  makeDraggable(div); // Neu: Drag & Drop aktivieren
 }
 
 exportButton.addEventListener("click", () => {
   const fields = document.querySelectorAll(".input-box");
-  const imageSrc = baseImage.src;
 
-  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<imageTask>\n  <image src="${imageSrc}" />\n`;
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<imageTask>\n  <image src="${currentImageFileName}" />\n`;
 
   fields.forEach((field) => {
     const input = field.querySelector("input");
@@ -65,3 +68,41 @@ exportButton.addEventListener("click", () => {
   xml += `</imageTask>`;
   output.value = xml;
 });
+
+// Drag & Drop Funktion
+function makeDraggable(element) {
+  let offsetX, offsetY;
+  let isDragging = false;
+
+  element.addEventListener("mousedown", (e) => {
+    if (e.target.tagName === "INPUT") return; // Nur Rand verschiebbar
+    isDragging = true;
+    const rect = element.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    element.style.zIndex = "1000";
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+
+    const containerRect = imageContainer.getBoundingClientRect();
+    let x = e.clientX - containerRect.left - offsetX;
+    let y = e.clientY - containerRect.top - offsetY;
+
+    // Optional: Begrenzung innerhalb des Containers
+    x = Math.max(0, Math.min(containerRect.width - element.offsetWidth, x));
+    y = Math.max(0, Math.min(containerRect.height - element.offsetHeight, y));
+
+    element.style.left = `${x}px`;
+    element.style.top = `${y}px`;
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+      element.style.zIndex = "1";
+    }
+  });
+}
