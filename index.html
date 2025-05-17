@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bild-Editor für XML-Erstellung</title>
+  <link rel="stylesheet" href="editor.css" />
+</head>
+<body>
+  <h1>Bild-Editor für Eingabefelder</h1>
+
+  <input type="file" id="imageLoader" accept="image/png" />
+  <button id="exportButton">XML exportieren</button>
+
+  <div id="imageContainer">
+    <img id="baseImage" />
+  </div>
+
+  <textarea id="output" placeholder="Hier erscheint die XML-Ausgabe…" rows="10"></textarea>
+
+  <script src="editor.js"></script>
+</body>
+</html>
