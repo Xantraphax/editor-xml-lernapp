@@ -1,0 +1,39 @@
+body {
+  font-family: sans-serif;
+  margin: 20px;
+}
+
+#imageContainer {
+  position: relative;
+  display: inline-block;
+  border: 1px solid #ccc;
+  margin-top: 20px;
+}
+
+#baseImage {
+  max-width: 100%;
+  display: block;
+}
+
+.input-box {
+  position: absolute;
+  border: 1px solid #333;
+  background: rgba(255, 255, 255, 0.8);
+  resize: both;
+  overflow: hidden;
+  min-width: 40px;
+  min-height: 20px;
+  padding: 2px;
+}
+
+.input-box input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-weight: bold;
+}
+
+textarea {
+  width: 100%;
+  margin-top: 20px;
+}
