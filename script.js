@@ -39,8 +39,14 @@ function createInputBox(x, y) {
   div.innerHTML = `
     <input type="text" placeholder="Lösung" />
     <div class="resize-handle"></div>
+    <button class="delete-button">×</button>
   `;
-
+  
+  // Event zum Löschen
+  div.querySelector(".delete-button").addEventListener("click", () => {
+    imageContainer.removeChild(div);
+  });
+  
   imageContainer.appendChild(div);
   makeDraggable(div);
 }
