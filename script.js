@@ -36,14 +36,13 @@ function createInputBox(x, y) {
   div.style.width = "60px";
   div.style.height = "30px";
 
-  const input = document.createElement("input");
-  input.type = "text";
-  input.placeholder = "Lösung";
+  div.innerHTML = `
+    <input type="text" placeholder="Lösung" />
+    <div class="resize-handle"></div>
+  `;
 
-  div.appendChild(input);
   imageContainer.appendChild(div);
-
-  makeDraggable(div); // Neu: Drag & Drop aktivieren
+  makeDraggable(div);
 }
 
 exportButton.addEventListener("click", () => {
@@ -69,13 +68,18 @@ exportButton.addEventListener("click", () => {
   output.value = xml;
 });
 
-// Drag & Drop Funktion
+// === Drag & Resize ===
 function makeDraggable(element) {
   let offsetX, offsetY;
   let isDragging = false;
+  let isResizing = false;
 
+  const resizeHandle = element.querySelector(".resize-handle");
+
+  // Dragging
   element.addEventListener("mousedown", (e) => {
-    if (e.target.tagName === "INPUT") return; // Nur Rand verschiebbar
+    if (e.target.tagName === "INPUT" || e.target.classList.contains("resize-handle")) return;
+
     isDragging = true;
     const rect = element.getBoundingClientRect();
     offsetX = e.clientX - rect.left;
@@ -84,24 +88,39 @@ function makeDraggable(element) {
     e.preventDefault();
   });
 
+  // Resizing
+  resizeHandle.addEventListener("mousedown", (e) => {
+    isResizing = true;
+    element.style.zIndex = "1000";
+    e.stopPropagation();
+    e.preventDefault();
+  });
+
   document.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-
     const containerRect = imageContainer.getBoundingClientRect();
-    let x = e.clientX - containerRect.left - offsetX;
-    let y = e.clientY - containerRect.top - offsetY;
 
-    // Optional: Begrenzung innerhalb des Containers
-    x = Math.max(0, Math.min(containerRect.width - element.offsetWidth, x));
-    y = Math.max(0, Math.min(containerRect.height - element.offsetHeight, y));
+    if (isDragging) {
+      let x = e.clientX - containerRect.left - offsetX;
+      let y = e.clientY - containerRect.top - offsetY;
+      x = Math.max(0, Math.min(containerRect.width - element.offsetWidth, x));
+      y = Math.max(0, Math.min(containerRect.height - element.offsetHeight, y));
+      element.style.left = `${x}px`;
+      element.style.top = `${y}px`;
+    }
 
-    element.style.left = `${x}px`;
-    element.style.top = `${y}px`;
+    if (isResizing) {
+      const rect = element.getBoundingClientRect();
+      const newWidth = e.clientX - rect.left;
+      const newHeight = e.clientY - rect.top;
+      element.style.width = `${Math.max(30, newWidth)}px`;
+      element.style.height = `${Math.max(20, newHeight)}px`;
+    }
   });
 
   document.addEventListener("mouseup", () => {
-    if (isDragging) {
+    if (isDragging || isResizing) {
       isDragging = false;
+      isResizing = false;
       element.style.zIndex = "1";
     }
   });
