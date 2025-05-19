@@ -140,8 +140,9 @@ function makeDraggable(element) {
     }
   });
   
-  document.addEventListener("keydown", (e) => {
-  // Kopieren mit Ctrl+C / Cmd+C
+let copyCooldown = false;
+
+document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && selectedBox) {
     const input = selectedBox.querySelector("input");
     copiedBoxData = {
@@ -153,8 +154,9 @@ function makeDraggable(element) {
     };
   }
 
-  // Einfügen mit Ctrl+V / Cmd+V
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && copiedBoxData) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && copiedBoxData && !copyCooldown) {
+    copyCooldown = true;
+
     const newX = copiedBoxData.left + 20;
     const newY = copiedBoxData.top + 20;
 
@@ -182,7 +184,13 @@ function makeDraggable(element) {
 
     imageContainer.appendChild(div);
     makeDraggable(div);
+
+    // Cooldown von 300 ms
+    setTimeout(() => {
+      copyCooldown = false;
+    }, 300);
   }
 });
+
 
 }
