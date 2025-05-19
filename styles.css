@@ -63,6 +63,10 @@ textarea {
   z-index: 15;
 }
 
+button.active {
+  background-color: #4488ff;
+  color: white;
+}
 #guideButtons {
   margin-top: 20px;
   text-align: center;
@@ -70,7 +74,7 @@ textarea {
 
 .guide-line {
   position: absolute;
-  background: rgba(0, 0, 255, 0.4);
+  background: rgba(0, 0, 255, 0.5);
   z-index: 999;
   cursor: move;
 }
@@ -78,20 +82,18 @@ textarea {
 .guide-line.horizontal {
   height: 1px;
   width: 100%;
-  left: 0;
 }
 
 .guide-line.vertical {
   width: 1px;
   height: 100%;
-  top: 0;
 }
 
 .guide-line::after {
   content: "✕";
   position: absolute;
-  right: -10px;
-  top: -10px;
+  right: -7px;
+  top: -7px;
   background: red;
   color: white;
   font-size: 12px;
