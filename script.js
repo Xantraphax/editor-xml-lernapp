@@ -7,6 +7,8 @@ const exportButton = document.getElementById("exportButton");
 let currentImageFileName = "";
 let selectedBox = null;
 let copiedBoxData = null;
+let pasteInProgress = false;
+
 
 
 imageLoader.addEventListener("change", (e) => {
@@ -140,8 +142,7 @@ function makeDraggable(element) {
     }
   });
   
-let copyCooldown = false;
-
+// === Copy & Pasterino ===
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && selectedBox) {
     const input = selectedBox.querySelector("input");
@@ -154,8 +155,8 @@ document.addEventListener("keydown", (e) => {
     };
   }
 
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && copiedBoxData && !copyCooldown) {
-    copyCooldown = true;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && copiedBoxData && !pasteInProgress) {
+    pasteInProgress = true;
 
     const newX = copiedBoxData.left + 20;
     const newY = copiedBoxData.top + 20;
@@ -184,13 +185,16 @@ document.addEventListener("keydown", (e) => {
 
     imageContainer.appendChild(div);
     makeDraggable(div);
-
-    // Cooldown von 300 ms
-    setTimeout(() => {
-      copyCooldown = false;
-    }, 300);
   }
 });
+
+// Rücksetzen des pasteInProgress Flags nach Tastendruck
+document.addEventListener("keyup", (e) => {
+  if (e.key.toLowerCase() === "v") {
+    pasteInProgress = false;
+  }
+});
+
 
 
 }
