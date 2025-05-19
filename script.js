@@ -5,6 +5,9 @@ const output = document.getElementById("output");
 const exportButton = document.getElementById("exportButton");
 
 let currentImageFileName = "";
+let selectedBox = null;
+let copiedBoxData = null;
+
 
 imageLoader.addEventListener("change", (e) => {
   const file = e.target.files[0];
@@ -47,6 +50,12 @@ function createInputBox(x, y) {
     imageContainer.removeChild(div);
   });
   
+  // Auswahl durch Klick
+  div.addEventListener("click", (e) => {
+    e.stopPropagation(); // verhindert dass baseImage Klick ausgelöst wird
+    selectedBox = div;
+  });
+
   imageContainer.appendChild(div);
   makeDraggable(div);
 }
@@ -130,4 +139,50 @@ function makeDraggable(element) {
       element.style.zIndex = "1";
     }
   });
+  
+  document.addEventListener("keydown", (e) => {
+  // Kopieren mit Ctrl+C / Cmd+C
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && selectedBox) {
+    const input = selectedBox.querySelector("input");
+    copiedBoxData = {
+      value: input.value,
+      width: selectedBox.offsetWidth,
+      height: selectedBox.offsetHeight,
+      left: selectedBox.offsetLeft,
+      top: selectedBox.offsetTop
+    };
+  }
+
+  // Einfügen mit Ctrl+V / Cmd+V
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && copiedBoxData) {
+    const newX = copiedBoxData.left + 20;
+    const newY = copiedBoxData.top + 20;
+
+    const div = document.createElement("div");
+    div.classList.add("input-box");
+    div.style.left = `${newX}px`;
+    div.style.top = `${newY}px`;
+    div.style.width = `${copiedBoxData.width}px`;
+    div.style.height = `${copiedBoxData.height}px`;
+
+    div.innerHTML = `
+      <input type="text" value="${copiedBoxData.value}" />
+      <div class="resize-handle"></div>
+      <button class="delete-button">×</button>
+    `;
+
+    div.querySelector(".delete-button").addEventListener("click", () => {
+      imageContainer.removeChild(div);
+    });
+
+    div.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectedBox = div;
+    });
+
+    imageContainer.appendChild(div);
+    makeDraggable(div);
+  }
+});
+
 }
