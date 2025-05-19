@@ -17,11 +17,12 @@ body {
 
 .input-box {
   position: absolute;
-  border: 1px solid #000;
+  border: 3px solid #007acc; /* dicker und farbig */
   background: rgba(255, 255, 255, 0.8);
   box-sizing: border-box;
   padding: 0;
   resize: none;
+  cursor: move; /* Zeigt an, dass es verschiebbar ist */
 }
 
 .input-box input {
