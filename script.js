@@ -9,8 +9,12 @@ let selectedBox = null;
 let copiedBoxData = null;
 let pasteInProgress = false;
 
+// Hilfslinien-Logik
+let guideMode = null; // "horizontal", "vertical", null
+let movingGuide = null;
+let guideOffset = 0;
 
-
+// === Bild laden ===
 imageLoader.addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -24,7 +28,45 @@ imageLoader.addEventListener("change", (e) => {
   reader.readAsDataURL(file);
 });
 
+// === Input-Feld hinzufügen ===
 baseImage.addEventListener("click", (e) => {
+  if (guideMode) {
+    const rect = imageContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const line = document.createElement("div");
+    line.classList.add("guide-line", guideMode);
+    if (guideMode === "horizontal") {
+      line.style.top = `${y}px`;
+      line.style.left = "0";
+    } else {
+      line.style.left = `${x}px`;
+      line.style.top = "0";
+    }
+
+    // Löschen per Klick auf ✕
+    line.addEventListener("click", (ev) => {
+      if (ev.offsetX > line.offsetWidth - 15 && ev.offsetY < 15) {
+        ev.stopPropagation();
+        line.remove();
+      }
+    });
+
+    // Ziehen
+    line.addEventListener("mousedown", (ev) => {
+      if (ev.target !== line) return;
+      movingGuide = line;
+      guideOffset = guideMode === "vertical" ? ev.clientX - line.offsetLeft : ev.clientY - line.offsetTop;
+      ev.stopPropagation();
+      ev.preventDefault();
+    });
+
+    imageContainer.appendChild(line);
+    guideMode = null;
+    return;
+  }
+
   const rect = baseImage.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
@@ -46,15 +88,13 @@ function createInputBox(x, y) {
     <div class="resize-handle"></div>
     <button class="delete-button">×</button>
   `;
-  
-  // Event zum Löschen
+
   div.querySelector(".delete-button").addEventListener("click", () => {
     imageContainer.removeChild(div);
   });
-  
-  // Auswahl durch Klick
+
   div.addEventListener("click", (e) => {
-    e.stopPropagation(); // verhindert dass baseImage Klick ausgelöst wird
+    e.stopPropagation();
     selectedBox = div;
   });
 
@@ -85,7 +125,7 @@ exportButton.addEventListener("click", () => {
   output.value = xml;
 });
 
-// === Drag & Resize ===
+// === Drag & Resize für Input-Boxen ===
 function makeDraggable(element) {
   let offsetX, offsetY;
   let isDragging = false;
@@ -93,7 +133,6 @@ function makeDraggable(element) {
 
   const resizeHandle = element.querySelector(".resize-handle");
 
-  // Dragging
   element.addEventListener("mousedown", (e) => {
     if (e.target.tagName === "INPUT" || e.target.classList.contains("resize-handle")) return;
 
@@ -105,7 +144,6 @@ function makeDraggable(element) {
     e.preventDefault();
   });
 
-  // Resizing
   resizeHandle.addEventListener("mousedown", (e) => {
     isResizing = true;
     element.style.zIndex = "1000";
@@ -135,14 +173,14 @@ function makeDraggable(element) {
   });
 
   document.addEventListener("mouseup", () => {
-    if (isDragging || isResizing) {
-      isDragging = false;
-      isResizing = false;
-      element.style.zIndex = "1";
-    }
+    isDragging = false;
+    isResizing = false;
+    element.style.zIndex = "1";
+    movingGuide = null;
   });
-  
-// === Copy & Pasterino ===
+}
+
+// === Copy & Paste ===
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && selectedBox) {
     const input = selectedBox.querySelector("input");
@@ -151,7 +189,8 @@ document.addEventListener("keydown", (e) => {
       width: selectedBox.offsetWidth,
       height: selectedBox.offsetHeight,
       left: selectedBox.offsetLeft,
-      top: selectedBox.offsetTop
+      top: selectedBox.offsetTop,
+      zIndex: parseInt(selectedBox.style.zIndex) || 1
     };
   }
 
@@ -165,8 +204,7 @@ document.addEventListener("keydown", (e) => {
     div.classList.add("input-box");
     div.style.left = `${newX}px`;
     div.style.top = `${newY}px`;
-    const originalZ = parseInt(selectedBox.style.zIndex) || 1;
-    div.style.zIndex = originalZ + 1;
+    div.style.zIndex = copiedBoxData.zIndex + 1;
     div.style.width = `${copiedBoxData.width}px`;
     div.style.height = `${copiedBoxData.height}px`;
 
@@ -190,13 +228,30 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// Rücksetzen des pasteInProgress Flags nach Tastendruck
 document.addEventListener("keyup", (e) => {
   if (e.key.toLowerCase() === "v") {
     pasteInProgress = false;
   }
 });
 
+// === Guide Buttons ===
+document.getElementById("addHorizontalGuide").addEventListener("click", () => {
+  guideMode = guideMode === "horizontal" ? null : "horizontal";
+});
+document.getElementById("addVerticalGuide").addEventListener("click", () => {
+  guideMode = guideMode === "vertical" ? null : "vertical";
+});
 
+// === Move Guide Lines ===
+document.addEventListener("mousemove", (e) => {
+  if (!movingGuide) return;
 
-}
+  const containerRect = imageContainer.getBoundingClientRect();
+  if (movingGuide.classList.contains("horizontal")) {
+    let y = e.clientY - containerRect.top - guideOffset;
+    movingGuide.style.top = `${Math.max(0, Math.min(containerRect.height, y))}px`;
+  } else {
+    let x = e.clientX - containerRect.left - guideOffset;
+    movingGuide.style.left = `${Math.max(0, Math.min(containerRect.width, x))}px`;
+  }
+});
