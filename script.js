@@ -1,19 +1,20 @@
+// === Globale Variablen ===
 const imageLoader = document.getElementById("imageLoader");
 const imageContainer = document.getElementById("imageContainer");
 const baseImage = document.getElementById("baseImage");
 const output = document.getElementById("output");
 const exportButton = document.getElementById("exportButton");
-const toggleGuidesButton = document.getElementById("toggleGuides");
+
+const guideHorizontal = document.getElementById("guideHorizontal");
+const guideVertical = document.getElementById("guideVertical");
 
 let currentImageFileName = "";
 let selectedBox = null;
 let copiedBoxData = null;
 let pasteInProgress = false;
 
-let guideEditMode = false;
-let guideType = "horizontal";
-let movingGuide = null;
-let guideOffset = 0;
+let guideMode = null; // 'horizontal', 'vertical' oder null
+let guides = []; // Liste der Hilfslinien
 
 // === Bild laden ===
 imageLoader.addEventListener("change", (e) => {
@@ -29,27 +30,97 @@ imageLoader.addEventListener("change", (e) => {
   reader.readAsDataURL(file);
 });
 
-// === Toggle Hilfslinien-Modus ===
-toggleGuidesButton.addEventListener("click", () => {
-  guideEditMode = !guideEditMode;
-  toggleGuidesButton.classList.toggle("active", guideEditMode);
-  guideType = guideEditMode ? "horizontal" : null;
+// === Hilfslinienmodus umschalten ===
+guideHorizontal.addEventListener("change", () => {
+  if (guideHorizontal.checked) {
+    guideMode = "horizontal";
+    guideVertical.checked = false;
+  } else {
+    guideMode = null;
+  }
 });
 
-// === Klick zum Platzieren von Feldern oder Hilfslinien ===
+guideVertical.addEventListener("change", () => {
+  if (guideVertical.checked) {
+    guideMode = "vertical";
+    guideHorizontal.checked = false;
+  } else {
+    guideMode = null;
+  }
+});
+
+// === Klick auf das Bild ===
 baseImage.addEventListener("click", (e) => {
-  const rect = imageContainer.getBoundingClientRect();
+  const rect = baseImage.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
-  if (guideEditMode) {
-    createGuideLine(x, y);
+  if (guideMode) {
+    createGuideLine(x, y, guideMode);
   } else {
     createInputBox(x, y);
   }
 });
 
-// === Textfeld erstellen ===
+// === Hilfslinie erstellen ===
+function createGuideLine(x, y, orientation) {
+  const line = document.createElement("div");
+  line.classList.add("guide-line", orientation);
+  line.style.position = "absolute";
+  line.style.backgroundColor = "red";
+  line.style.zIndex = "500";
+
+  if (orientation === "horizontal") {
+    line.style.left = "0px";
+    line.style.width = "100%";
+    line.style.height = "1px";
+    line.style.top = `${y}px`;
+  } else {
+    line.style.top = "0px";
+    line.style.height = "100%";
+    line.style.width = "1px";
+    line.style.left = `${x}px`;
+  }
+
+  // Verschieben
+  let isDragging = false;
+  let offset = 0;
+
+  line.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    offset = orientation === "horizontal" ? e.clientY - line.getBoundingClientRect().top : e.clientX - line.getBoundingClientRect().left;
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    const containerRect = imageContainer.getBoundingClientRect();
+    if (orientation === "horizontal") {
+      let newY = e.clientY - containerRect.top - offset;
+      newY = Math.max(0, Math.min(containerRect.height, newY));
+      line.style.top = `${newY}px`;
+    } else {
+      let newX = e.clientX - containerRect.left - offset;
+      newX = Math.max(0, Math.min(containerRect.width, newX));
+      line.style.left = `${newX}px`;
+    }
+  });
+
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+
+  // Löschen durch Doppelklick
+  line.addEventListener("dblclick", () => {
+    imageContainer.removeChild(line);
+    guides = guides.filter((g) => g !== line);
+  });
+
+  imageContainer.appendChild(line);
+  guides.push(line);
+}
+
+// === Eingabefeld erstellen ===
 function createInputBox(x, y) {
   const div = document.createElement("div");
   div.classList.add("input-box");
@@ -57,6 +128,8 @@ function createInputBox(x, y) {
   div.style.top = `${y}px`;
   div.style.width = "60px";
   div.style.height = "30px";
+  div.style.position = "absolute";
+  div.style.zIndex = "1";
 
   div.innerHTML = `
     <input type="text" placeholder="Lösung" />
@@ -64,10 +137,12 @@ function createInputBox(x, y) {
     <button class="delete-button">×</button>
   `;
 
+  // Löschen
   div.querySelector(".delete-button").addEventListener("click", () => {
     imageContainer.removeChild(div);
   });
 
+  // Auswahl
   div.addEventListener("click", (e) => {
     e.stopPropagation();
     selectedBox = div;
@@ -77,7 +152,7 @@ function createInputBox(x, y) {
   makeDraggable(div);
 }
 
-// === Exportfunktion ===
+// === Exportieren ===
 exportButton.addEventListener("click", () => {
   const fields = document.querySelectorAll(".input-box");
 
@@ -101,13 +176,15 @@ exportButton.addEventListener("click", () => {
   output.value = xml;
 });
 
-// === Drag & Resize + Snap-to-Guide ===
+// === Drag & Resize ===
 function makeDraggable(element) {
   let offsetX, offsetY;
   let isDragging = false;
   let isResizing = false;
+
   const resizeHandle = element.querySelector(".resize-handle");
 
+  // Dragging
   element.addEventListener("mousedown", (e) => {
     if (e.target.tagName === "INPUT" || e.target.classList.contains("resize-handle")) return;
 
@@ -119,6 +196,7 @@ function makeDraggable(element) {
     e.preventDefault();
   });
 
+  // Resizing
   resizeHandle.addEventListener("mousedown", (e) => {
     isResizing = true;
     element.style.zIndex = "1000";
@@ -132,27 +210,26 @@ function makeDraggable(element) {
     if (isDragging) {
       let x = e.clientX - containerRect.left - offsetX;
       let y = e.clientY - containerRect.top - offsetY;
+      x = Math.max(0, Math.min(containerRect.width - element.offsetWidth, x));
+      y = Math.max(0, Math.min(containerRect.height - element.offsetHeight, y));
 
-      // Snap an Hilfslinien
-      const SNAP_THRESHOLD = 8;
-      const guides = document.querySelectorAll(".guide-line");
-
+      // Snapping an Hilfslinien
+      const snapThreshold = 5; // Pixel
       guides.forEach((guide) => {
+        const guideRect = guide.getBoundingClientRect();
         if (guide.classList.contains("horizontal")) {
-          const gy = parseInt(guide.style.top);
-          if (Math.abs(y - gy) < SNAP_THRESHOLD) {
-            y = gy;
+          const guideY = guideRect.top - containerRect.top;
+          if (Math.abs(y - guideY) < snapThreshold) {
+            y = guideY;
           }
         } else {
-          const gx = parseInt(guide.style.left);
-          if (Math.abs(x - gx) < SNAP_THRESHOLD) {
-            x = gx;
+          const guideX = guideRect.left - containerRect.left;
+          if (Math.abs(x - guideX) < snapThreshold) {
+            x = guideX;
           }
         }
       });
 
-      x = Math.max(0, Math.min(containerRect.width - element.offsetWidth, x));
-      y = Math.max(0, Math.min(containerRect.height - element.offsetHeight, y));
       element.style.left = `${x}px`;
       element.style.top = `${y}px`;
     }
@@ -175,7 +252,7 @@ function makeDraggable(element) {
   });
 }
 
-// === Copy & Paste mit Z-Ebene ===
+// === Copy & Paste ===
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && selectedBox) {
     const input = selectedBox.querySelector("input");
@@ -185,7 +262,7 @@ document.addEventListener("keydown", (e) => {
       height: selectedBox.offsetHeight,
       left: selectedBox.offsetLeft,
       top: selectedBox.offsetTop,
-      zIndex: parseInt(selectedBox.style.zIndex) || 1
+      zIndex: parseInt(selectedBox.style.zIndex) || 1,
     };
   }
 
@@ -193,98 +270,6 @@ document.addEventListener("keydown", (e) => {
     pasteInProgress = true;
 
     const newX = copiedBoxData.left + 20;
-    const newY = copiedBoxData.top + 20;
 
-    const div = document.createElement("div");
-    div.classList.add("input-box");
-    div.style.left = `${newX}px`;
-    div.style.top = `${newY}px`;
-    div.style.width = `${copiedBoxData.width}px`;
-    div.style.height = `${copiedBoxData.height}px`;
-    div.style.zIndex = copiedBoxData.zIndex + 1;
-
-    div.innerHTML = `
-      <input type="text" value="${copiedBoxData.value}" />
-      <div class="resize-handle"></div>
-      <button class="delete-button">×</button>
-    `;
-
-    div.querySelector(".delete-button").addEventListener("click", () => {
-      imageContainer.removeChild(div);
-    });
-
-    div.addEventListener("click", (e) => {
-      e.stopPropagation();
-      selectedBox = div;
-    });
-
-    imageContainer.appendChild(div);
-    makeDraggable(div);
-  }
-});
-
-document.addEventListener("keyup", (e) => {
-  if (e.key.toLowerCase() === "v") {
-    pasteInProgress = false;
-  }
-});
-
-// === Hilfslinie erstellen ===
-function createGuideLine(x, y) {
-  const line = document.createElement("div");
-  line.classList.add("guide-line", guideType);
-
-  if (guideType === "horizontal") {
-    line.style.top = `${y}px`;
-    line.style.left = "0";
-  } else {
-    line.style.left = `${x}px`;
-    line.style.top = "0";
-  }
-
-  // Löschen
-  line.addEventListener("click", (ev) => {
-    if (!guideEditMode) return;
-    const offsetX = ev.offsetX;
-    const offsetY = ev.offsetY;
-    if (offsetX > line.offsetWidth - 15 && offsetY < 15) {
-      ev.stopPropagation();
-      line.remove();
-    }
-  });
-
-  // Ziehen
-  line.addEventListener("mousedown", (ev) => {
-    if (!guideEditMode) return;
-    movingGuide = line;
-    const rect = imageContainer.getBoundingClientRect();
-    guideOffset = guideType === "vertical"
-      ? ev.clientX - line.getBoundingClientRect().left
-      : ev.clientY - line.getBoundingClientRect().top;
-    ev.stopPropagation();
-    ev.preventDefault();
-  });
-
-  imageContainer.appendChild(line);
-
-  guideType = guideType === "horizontal" ? "vertical" : "horizontal";
-}
-
-document.addEventListener("mousemove", (e) => {
-  if (!movingGuide) return;
-  const rect = imageContainer.getBoundingClientRect();
-
-  if (movingGuide.classList.contains("horizontal")) {
-    let y = e.clientY - rect.top - guideOffset;
-    y = Math.max(0, Math.min(rect.height, y));
-    movingGuide.style.top = `${y}px`;
-  } else {
-    let x = e.clientX - rect.left - guideOffset;
-    x = Math.max(0, Math.min(rect.width, x));
-    movingGuide.style.left = `${x}px`;
-  }
-});
-
-document.addEventListener("mouseup", () => {
-  movingGuide = null;
-});
+::contentReference[oaicite:16]{index=16}
+ 
