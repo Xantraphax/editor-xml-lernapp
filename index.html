@@ -7,22 +7,25 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Bild-Editor für Eingabefelder</h1>
+    <div id="controls">
+    <input type="file" id="imageLoader" accept="image/*" />
+    <button id="exportButton">Exportieren</button>
 
-  <input type="file" id="imageLoader" accept="image/png" />
-  <button id="exportButton">XML exportieren</button>
-  <div id="guideButtons">
-    <button id="toggleGuides">Hilfslinien bearbeiten</button>
-    <button id="addHorizontalGuide">Hilfslinie waagerecht</button>
-    <button id="addVerticalGuide">Hilfslinie senkrecht</button>
+    <label>
+      <input type="radio" id="guideHorizontal" name="guideMode" />
+      Hilfslinie waagerecht
+    </label>
+    <label>
+      <input type="radio" id="guideVertical" name="guideMode" />
+      Hilfslinie senkrecht
+    </label>
   </div>
-
 
   <div id="imageContainer">
-    <img id="baseImage" />
+    <img id="baseImage" src="" alt="Bild laden..." />
   </div>
 
-  <textarea id="output" placeholder="Hier erscheint die XML-Ausgabe…" rows="10"></textarea>
+  <textarea id="output" readonly></textarea>
 
   <script src="script.js"></script>
 </body>
