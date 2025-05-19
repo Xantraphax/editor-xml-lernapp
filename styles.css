@@ -63,3 +63,42 @@ textarea {
   z-index: 15;
 }
 
+#guideButtons {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.guide-line {
+  position: absolute;
+  background: rgba(0, 0, 255, 0.4);
+  z-index: 999;
+  cursor: move;
+}
+
+.guide-line.horizontal {
+  height: 1px;
+  width: 100%;
+  left: 0;
+}
+
+.guide-line.vertical {
+  width: 1px;
+  height: 100%;
+  top: 0;
+}
+
+.guide-line::after {
+  content: "✕";
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  background: red;
+  color: white;
+  font-size: 12px;
+  width: 14px;
+  height: 14px;
+  text-align: center;
+  line-height: 14px;
+  cursor: pointer;
+}
+
