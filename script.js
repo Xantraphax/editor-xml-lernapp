@@ -165,7 +165,8 @@ document.addEventListener("keydown", (e) => {
     div.classList.add("input-box");
     div.style.left = `${newX}px`;
     div.style.top = `${newY}px`;
-    div.style.zIndex = "1000";
+    const originalZ = parseInt(selectedBox.style.zIndex) || 1;
+    div.style.zIndex = originalZ + 1;
     div.style.width = `${copiedBoxData.width}px`;
     div.style.height = `${copiedBoxData.height}px`;
 
