@@ -5,6 +5,8 @@ const output = document.getElementById("output");
 const exportButton = document.getElementById("exportButton");
 const horizontalGuideRadio = document.getElementById("horizontalGuide");
 const verticalGuideRadio = document.getElementById("verticalGuide");
+const horizontalGuideBtn = document.getElementById("horizontalGuide");
+const verticalGuideBtn = document.getElementById("verticalGuide");
 
 let currentImageFileName = "";
 let selectedBox = null;
@@ -31,21 +33,23 @@ imageLoader.addEventListener("change", (e) => {
 });
 
 // === Radio Buttons für Hilfslinien aktivieren Modus ===
-function updateGuideMode() {
-  if (horizontalGuideRadio.checked) {
-    guideEditMode = true;
-    guideType = "horizontal";
-  } else if (verticalGuideRadio.checked) {
-    guideEditMode = true;
-    guideType = "vertical";
-  } else {
-    guideEditMode = false;
-    guideType = null;
+function updateGuideMode(buttonClicked) {
+  if (buttonClicked === "horizontal") {
+    const isActive = horizontalGuideBtn.classList.toggle("active");
+    verticalGuideBtn.classList.remove("active");
+    guideEditMode = isActive;
+    guideType = isActive ? "horizontal" : null;
+  } else if (buttonClicked === "vertical") {
+    const isActive = verticalGuideBtn.classList.toggle("active");
+    horizontalGuideBtn.classList.remove("active");
+    guideEditMode = isActive;
+    guideType = isActive ? "vertical" : null;
   }
 }
 
-horizontalGuideRadio.addEventListener("change", updateGuideMode);
-verticalGuideRadio.addEventListener("change", updateGuideMode);
+// Event-Listener
+horizontalGuideBtn.addEventListener("click", () => updateGuideMode("horizontal"));
+verticalGuideBtn.addEventListener("click", () => updateGuideMode("vertical"));
 
 // === Klick zum Platzieren von Feldern oder Hilfslinien ===
 baseImage.addEventListener("click", (e) => {
