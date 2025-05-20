@@ -11,12 +11,12 @@
 
   <input type="file" id="imageLoader" accept="image/png" />
   <button id="exportButton">XML exportieren</button>
-  <div id="guideButtons">
-    <button id="toggleGuides">Hilfslinien bearbeiten</button>
-    <button id="addHorizontalGuide">Hilfslinie waagerecht</button>
-    <button id="addVerticalGuide">Hilfslinie senkrecht</button>
-  </div>
 
+  <fieldset id="guideButtons">
+    <legend>Hilfslinien-Modus</legend>
+    <label><input type="radio" name="guideType" id="horizontalGuide" /> Waagerecht</label>
+    <label><input type="radio" name="guideType" id="verticalGuide" /> Senkrecht</label>
+  </fieldset>
 
   <div id="imageContainer">
     <img id="baseImage" />
