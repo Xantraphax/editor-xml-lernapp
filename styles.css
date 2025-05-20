@@ -104,3 +104,8 @@ button.active {
   cursor: pointer;
 }
 
+button.guide-toggle.active {
+  background-color: #007bff;
+  color: white;
+}
+
