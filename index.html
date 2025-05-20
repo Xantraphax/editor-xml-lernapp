@@ -12,10 +12,14 @@
   <input type="file" id="imageLoader" accept="image/png" />
   <button id="exportButton">XML exportieren</button>
 
-  <div id="guideButtons">
-    <button id="horizontalGuide" class="guide-toggle">Waagerecht</button>
-    <button id="verticalGuide" class="guide-toggle">Senkrecht</button>
-  </div>
+  
+  <fieldset id="guideButtonsSet">
+    <legend>Hilfslinien-Modus</legend>
+    <div id="guideButtons">
+      <button id="horizontalGuide" class="guide-toggle">Waagerecht</button>
+      <button id="verticalGuide" class="guide-toggle">Senkrecht</button>
+    </div>
+  </fieldset>fieldset
 
   <div id="imageContainer">
     <img id="baseImage" />
