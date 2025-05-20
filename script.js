@@ -1,20 +1,21 @@
-// === DOM ELEMENTS ===
 const imageLoader = document.getElementById("imageLoader");
 const imageContainer = document.getElementById("imageContainer");
 const baseImage = document.getElementById("baseImage");
 const output = document.getElementById("output");
 const exportButton = document.getElementById("exportButton");
-const guideHorizontal = document.getElementById("guideHorizontal");
-const guideVertical = document.getElementById("guideVertical");
+const toggleGuidesButton = document.getElementById("toggleGuides");
 
 let currentImageFileName = "";
 let selectedBox = null;
 let copiedBoxData = null;
 let pasteInProgress = false;
-let guideMode = null;
-let activeGuideLine = null;
 
-// === IMAGE LOADING ===
+let guideEditMode = false;
+let guideType = "horizontal";
+let movingGuide = null;
+let guideOffset = 0;
+
+// === Bild laden ===
 imageLoader.addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -28,85 +29,27 @@ imageLoader.addEventListener("change", (e) => {
   reader.readAsDataURL(file);
 });
 
-// === GUIDE MODE RADIO TOGGLE ===
-function updateGuideMode() {
-  if (guideHorizontal.checked) {
-    guideVertical.checked = false;
-    guideMode = "horizontal";
-  } else if (guideVertical.checked) {
-    guideHorizontal.checked = false;
-    guideMode = "vertical";
-  } else {
-    guideMode = null;
-  }
-}
+// === Toggle Hilfslinien-Modus ===
+toggleGuidesButton.addEventListener("click", () => {
+  guideEditMode = !guideEditMode;
+  toggleGuidesButton.classList.toggle("active", guideEditMode);
+  guideType = guideEditMode ? "horizontal" : null;
+});
 
-guideHorizontal.addEventListener("change", updateGuideMode);
-guideVertical.addEventListener("change", updateGuideMode);
-
-// === CLICK HANDLING: INPUT-BOX vs GUIDE-LINE ===
-imageContainer.addEventListener("click", (e) => {
+// === Klick zum Platzieren von Feldern oder Hilfslinien ===
+baseImage.addEventListener("click", (e) => {
   const rect = imageContainer.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
-  if (guideMode === "horizontal") {
-    createGuideLine("horizontal", y);
-  } else if (guideMode === "vertical") {
-    createGuideLine("vertical", x);
+  if (guideEditMode) {
+    createGuideLine(x, y);
   } else {
     createInputBox(x, y);
   }
 });
 
-// === GUIDE LINE CREATION ===
-function createGuideLine(type, pos) {
-  const line = document.createElement("div");
-  line.classList.add("guide-line", type);
-  if (type === "horizontal") {
-    line.style.top = `${pos}px`;
-  } else {
-    line.style.left = `${pos}px`;
-  }
-
-  let dragging = false;
-  let offset = 0;
-
-  line.addEventListener("mousedown", (e) => {
-    dragging = true;
-    const rect = line.getBoundingClientRect();
-    offset = type === "horizontal" ? e.clientY - rect.top : e.clientX - rect.left;
-    activeGuideLine = line;
-    e.stopPropagation();
-  });
-
-  document.addEventListener("mousemove", (e) => {
-    if (!dragging || !activeGuideLine) return;
-    const containerRect = imageContainer.getBoundingClientRect();
-
-    if (type === "horizontal") {
-      const y = e.clientY - containerRect.top - offset;
-      activeGuideLine.style.top = `${Math.max(0, y)}px`;
-    } else {
-      const x = e.clientX - containerRect.left - offset;
-      activeGuideLine.style.left = `${Math.max(0, x)}px`;
-    }
-  });
-
-  document.addEventListener("mouseup", () => {
-    dragging = false;
-    activeGuideLine = null;
-  });
-
-  // Doppelklick löscht Linie
-  line.addEventListener("dblclick", () => {
-    line.remove();
-  });
-
-  imageContainer.appendChild(line);
-}
-
-// === INPUT BOX ===
+// === Textfeld erstellen ===
 function createInputBox(x, y) {
   const div = document.createElement("div");
   div.classList.add("input-box");
@@ -134,9 +77,10 @@ function createInputBox(x, y) {
   makeDraggable(div);
 }
 
-// === EXPORT TO XML ===
+// === Exportfunktion ===
 exportButton.addEventListener("click", () => {
   const fields = document.querySelectorAll(".input-box");
+
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<imageTask>\n  <image src="${currentImageFileName}" />\n`;
 
   fields.forEach((field) => {
@@ -157,7 +101,7 @@ exportButton.addEventListener("click", () => {
   output.value = xml;
 });
 
-// === DRAG & RESIZE ===
+// === Drag & Resize + Snap-to-Guide ===
 function makeDraggable(element) {
   let offsetX, offsetY;
   let isDragging = false;
@@ -166,15 +110,18 @@ function makeDraggable(element) {
 
   element.addEventListener("mousedown", (e) => {
     if (e.target.tagName === "INPUT" || e.target.classList.contains("resize-handle")) return;
+
     isDragging = true;
     const rect = element.getBoundingClientRect();
     offsetX = e.clientX - rect.left;
     offsetY = e.clientY - rect.top;
+    element.style.zIndex = "1000";
     e.preventDefault();
   });
 
   resizeHandle.addEventListener("mousedown", (e) => {
     isResizing = true;
+    element.style.zIndex = "1000";
     e.stopPropagation();
     e.preventDefault();
   });
@@ -185,8 +132,29 @@ function makeDraggable(element) {
     if (isDragging) {
       let x = e.clientX - containerRect.left - offsetX;
       let y = e.clientY - containerRect.top - offsetY;
-      element.style.left = `${Math.max(0, x)}px`;
-      element.style.top = `${Math.max(0, y)}px`;
+
+      // Snap an Hilfslinien
+      const SNAP_THRESHOLD = 8;
+      const guides = document.querySelectorAll(".guide-line");
+
+      guides.forEach((guide) => {
+        if (guide.classList.contains("horizontal")) {
+          const gy = parseInt(guide.style.top);
+          if (Math.abs(y - gy) < SNAP_THRESHOLD) {
+            y = gy;
+          }
+        } else {
+          const gx = parseInt(guide.style.left);
+          if (Math.abs(x - gx) < SNAP_THRESHOLD) {
+            x = gx;
+          }
+        }
+      });
+
+      x = Math.max(0, Math.min(containerRect.width - element.offsetWidth, x));
+      y = Math.max(0, Math.min(containerRect.height - element.offsetHeight, y));
+      element.style.left = `${x}px`;
+      element.style.top = `${y}px`;
     }
 
     if (isResizing) {
@@ -199,12 +167,15 @@ function makeDraggable(element) {
   });
 
   document.addEventListener("mouseup", () => {
-    isDragging = false;
-    isResizing = false;
+    if (isDragging || isResizing) {
+      isDragging = false;
+      isResizing = false;
+      element.style.zIndex = "1";
+    }
   });
 }
 
-// === COPY / PASTE ===
+// === Copy & Paste mit Z-Ebene ===
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && selectedBox) {
     const input = selectedBox.querySelector("input");
@@ -214,7 +185,7 @@ document.addEventListener("keydown", (e) => {
       height: selectedBox.offsetHeight,
       left: selectedBox.offsetLeft,
       top: selectedBox.offsetTop,
-      z: parseInt(selectedBox.style.zIndex) || 1
+      zIndex: parseInt(selectedBox.style.zIndex) || 1
     };
   }
 
@@ -230,7 +201,7 @@ document.addEventListener("keydown", (e) => {
     div.style.top = `${newY}px`;
     div.style.width = `${copiedBoxData.width}px`;
     div.style.height = `${copiedBoxData.height}px`;
-    div.style.zIndex = copiedBoxData.z + 1;
+    div.style.zIndex = copiedBoxData.zIndex + 1;
 
     div.innerHTML = `
       <input type="text" value="${copiedBoxData.value}" />
@@ -256,4 +227,64 @@ document.addEventListener("keyup", (e) => {
   if (e.key.toLowerCase() === "v") {
     pasteInProgress = false;
   }
+});
+
+// === Hilfslinie erstellen ===
+function createGuideLine(x, y) {
+  const line = document.createElement("div");
+  line.classList.add("guide-line", guideType);
+
+  if (guideType === "horizontal") {
+    line.style.top = `${y}px`;
+    line.style.left = "0";
+  } else {
+    line.style.left = `${x}px`;
+    line.style.top = "0";
+  }
+
+  // Löschen
+  line.addEventListener("click", (ev) => {
+    if (!guideEditMode) return;
+    const offsetX = ev.offsetX;
+    const offsetY = ev.offsetY;
+    if (offsetX > line.offsetWidth - 15 && offsetY < 15) {
+      ev.stopPropagation();
+      line.remove();
+    }
+  });
+
+  // Ziehen
+  line.addEventListener("mousedown", (ev) => {
+    if (!guideEditMode) return;
+    movingGuide = line;
+    const rect = imageContainer.getBoundingClientRect();
+    guideOffset = guideType === "vertical"
+      ? ev.clientX - line.getBoundingClientRect().left
+      : ev.clientY - line.getBoundingClientRect().top;
+    ev.stopPropagation();
+    ev.preventDefault();
+  });
+
+  imageContainer.appendChild(line);
+
+  guideType = guideType === "horizontal" ? "vertical" : "horizontal";
+}
+
+document.addEventListener("mousemove", (e) => {
+  if (!movingGuide) return;
+  const rect = imageContainer.getBoundingClientRect();
+
+  if (movingGuide.classList.contains("horizontal")) {
+    let y = e.clientY - rect.top - guideOffset;
+    y = Math.max(0, Math.min(rect.height, y));
+    movingGuide.style.top = `${y}px`;
+  } else {
+    let x = e.clientX - rect.left - guideOffset;
+    x = Math.max(0, Math.min(rect.width, x));
+    movingGuide.style.left = `${x}px`;
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  movingGuide = null;
 });
