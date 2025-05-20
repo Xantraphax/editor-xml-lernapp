@@ -3,7 +3,8 @@ const imageContainer = document.getElementById("imageContainer");
 const baseImage = document.getElementById("baseImage");
 const output = document.getElementById("output");
 const exportButton = document.getElementById("exportButton");
-const toggleGuidesButton = document.getElementById("toggleGuides");
+const horizontalGuideRadio = document.getElementById("horizontalGuide");
+const verticalGuideRadio = document.getElementById("verticalGuide");
 
 let currentImageFileName = "";
 let selectedBox = null;
@@ -11,7 +12,7 @@ let copiedBoxData = null;
 let pasteInProgress = false;
 
 let guideEditMode = false;
-let guideType = "horizontal";
+let guideType = null;
 let movingGuide = null;
 let guideOffset = 0;
 
@@ -29,12 +30,22 @@ imageLoader.addEventListener("change", (e) => {
   reader.readAsDataURL(file);
 });
 
-// === Toggle Hilfslinien-Modus ===
-toggleGuidesButton.addEventListener("click", () => {
-  guideEditMode = !guideEditMode;
-  toggleGuidesButton.classList.toggle("active", guideEditMode);
-  guideType = guideEditMode ? "horizontal" : null;
-});
+// === Radio Buttons für Hilfslinien aktivieren Modus ===
+function updateGuideMode() {
+  if (horizontalGuideRadio.checked) {
+    guideEditMode = true;
+    guideType = "horizontal";
+  } else if (verticalGuideRadio.checked) {
+    guideEditMode = true;
+    guideType = "vertical";
+  } else {
+    guideEditMode = false;
+    guideType = null;
+  }
+}
+
+horizontalGuideRadio.addEventListener("change", updateGuideMode);
+verticalGuideRadio.addEventListener("change", updateGuideMode);
 
 // === Klick zum Platzieren von Feldern oder Hilfslinien ===
 baseImage.addEventListener("click", (e) => {
@@ -232,42 +243,42 @@ document.addEventListener("keyup", (e) => {
 // === Hilfslinie erstellen ===
 function createGuideLine(x, y) {
   const line = document.createElement("div");
-  line.classList.add("guide-line", guideType);
 
   if (guideType === "horizontal") {
+    line.classList.add("guide-line", "horizontal");
     line.style.top = `${y}px`;
     line.style.left = "0";
-  } else {
+  } else if (guideType === "vertical") {
+    line.classList.add("guide-line", "vertical");
     line.style.left = `${x}px`;
     line.style.top = "0";
+  } else {
+    return;
   }
 
-  // Löschen
   line.addEventListener("click", (ev) => {
     if (!guideEditMode) return;
-    const offsetX = ev.offsetX;
-    const offsetY = ev.offsetY;
-    if (offsetX > line.offsetWidth - 15 && offsetY < 15) {
+    if (ev.offsetX > line.offsetWidth - 15 && ev.offsetY < 15) {
       ev.stopPropagation();
       line.remove();
     }
   });
 
-  // Ziehen
   line.addEventListener("mousedown", (ev) => {
     if (!guideEditMode) return;
     movingGuide = line;
-    const rect = imageContainer.getBoundingClientRect();
-    guideOffset = guideType === "vertical"
-      ? ev.clientX - line.getBoundingClientRect().left
-      : ev.clientY - line.getBoundingClientRect().top;
+
+    if (line.classList.contains("horizontal")) {
+      guideOffset = ev.clientY - line.getBoundingClientRect().top;
+    } else {
+      guideOffset = ev.clientX - line.getBoundingClientRect().left;
+    }
+
     ev.stopPropagation();
     ev.preventDefault();
   });
 
   imageContainer.appendChild(line);
-
-  guideType = guideType === "horizontal" ? "vertical" : "horizontal";
 }
 
 document.addEventListener("mousemove", (e) => {
@@ -278,7 +289,7 @@ document.addEventListener("mousemove", (e) => {
     let y = e.clientY - rect.top - guideOffset;
     y = Math.max(0, Math.min(rect.height, y));
     movingGuide.style.top = `${y}px`;
-  } else {
+  } else if (movingGuide.classList.contains("vertical")) {
     let x = e.clientX - rect.left - guideOffset;
     x = Math.max(0, Math.min(rect.width, x));
     movingGuide.style.left = `${x}px`;
