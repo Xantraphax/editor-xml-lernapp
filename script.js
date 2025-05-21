@@ -7,6 +7,10 @@ const horizontalGuideRadio = document.getElementById("horizontalGuide");
 const verticalGuideRadio = document.getElementById("verticalGuide");
 const horizontalGuideBtn = document.getElementById("horizontalGuide");
 const verticalGuideBtn = document.getElementById("verticalGuide");
+const popup = document.getElementById("distractorPopup");
+const distractorList = document.getElementById("distractorList");
+const closePopup = document.getElementById("closePopup");
+const addDistractorBtn = document.getElementById("addDistractor");
 
 let currentImageFileName = "";
 let selectedBox = null;
@@ -17,6 +21,7 @@ let guideEditMode = false;
 let guideType = null;
 let movingGuide = null;
 let guideOffset = 0;
+let currentDistractorBox = null;
 
 // === Bild laden ===
 imageLoader.addEventListener("change", (e) => {
@@ -108,8 +113,10 @@ exportButton.addEventListener("click", () => {
     const y = ((rect.top - containerRect.top) / containerRect.height) * 100;
     const w = (rect.width / containerRect.width) * 100;
     const h = (rect.height / containerRect.height) * 100;
+    const distractors = field.dataset.distractors ? JSON.parse(field.dataset.distractors) : [];
+    const distractorXML = distractors.map(d => `<distractor>${d}</distractor>`).join("");
 
-    xml += `  <field x="${x.toFixed(2)}%" y="${y.toFixed(2)}%" width="${w.toFixed(2)}%" height="${h.toFixed(2)}%" solution="${solution}" />\n`;
+    xml += `  <field x="${x.toFixed(2)}%" y="${y.toFixed(2)}%" width="${w.toFixed(2)}%" height="${h.toFixed(2)}%" solution="${solution}">\n${distractorXML}\n  </field>\n`;
   });
 
   xml += `</imageTask>`;
@@ -303,3 +310,55 @@ document.addEventListener("mousemove", (e) => {
 document.addEventListener("mouseup", () => {
   movingGuide = null;
 });
+
+// === Distraktoren ===
+imageContainer.addEventListener("dblclick", (e) => {
+  const targetBox = e.target.closest(".input-box");
+  if (!targetBox) return;
+
+  e.stopPropagation();
+  currentDistractorBox = targetBox;
+  openDistractorPopup(targetBox);
+});
+
+function openDistractorPopup(box) {
+  distractorList.innerHTML = "";
+
+  // Bestehende Distraktoren laden
+  const data = box.dataset.distractors ? JSON.parse(box.dataset.distractors) : [];
+
+  data.forEach((distractor) => {
+    addDistractorField(distractor);
+  });
+
+  popup.classList.remove("hidden");
+}
+
+function addDistractorField(value = "") {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Distraktor";
+  input.value = value;
+  input.classList.add("distractor-input");
+  distractorList.appendChild(input);
+}
+
+closePopup.addEventListener("click", () => {
+  popup.classList.add("hidden");
+  saveDistractors();
+});
+
+addDistractorBtn.addEventListener("click", () => {
+  addDistractorField();
+});
+
+function saveDistractors() {
+  if (!currentDistractorBox) return;
+
+  const inputs = distractorList.querySelectorAll("input");
+  const values = Array.from(inputs)
+    .map((input) => input.value.trim())
+    .filter((v) => v !== "");
+
+  currentDistractorBox.dataset.distractors = JSON.stringify(values);
+}
