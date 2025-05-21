@@ -24,7 +24,14 @@
   </div>
 
   <textarea id="output" placeholder="Hier erscheint die XML-Ausgabe…" rows="10"></textarea>
-
+  <div id="distractorPopup" class="popup hidden">
+    <div class="popup-header">
+      <span>Distraktoren</span>
+      <button id="closePopup" class="close-button">×</button>
+    </div>
+    <div id="distractorList"></div>
+    <button id="addDistractor" class="add-button">+ Distraktor hinzufügen</button>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
