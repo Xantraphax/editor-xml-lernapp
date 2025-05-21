@@ -109,3 +109,54 @@ button.guide-toggle.active {
   color: white;
 }
 
+.popup {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid #007acc;
+  padding: 20px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  z-index: 2000;
+  width: 300px;
+  border-radius: 8px;
+}
+
+.popup.hidden {
+  display: none;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.close-button {
+  background: red;
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.add-button {
+  background: #007acc;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.distractor-input {
+  width: 100%;
+  margin-bottom: 5px;
+}
+
